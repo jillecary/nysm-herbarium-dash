@@ -44,6 +44,6 @@ updated manually.
 
 ## Source code
 
-The code for this dashboard is open source: \[[GitHub repository link](https://github.com/jillecary/nysm-herbarium-dash)\]
+The code for this dashboard is open source, and Claude Code was used for support on coding tasks: \[[GitHub repository link](https://github.com/jillecary/nysm-herbarium-dash)\]
 
 Questions or corrections: [jillecary@gmail.com]
