@@ -15,7 +15,13 @@ export default {
   //     ]
   //   }
   // ],
-
+pages: [
+  {name: "Specimen map", path: "/map"},
+  {name: "Specimens by county", path: "/counties"},
+  {name: "Families", path: "/families"},
+  {name: "Collection summary", path: "/summary"},
+  {name: "About", path: "/about"}
+],
   // Content to add to the head of the page, e.g. for a favicon:
   head: '<link rel="icon" href="observable.png" type="image/png" sizes="32x32">',
 
