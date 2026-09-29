@@ -2,6 +2,7 @@ import {FileAttachment} from "observablehq:stdlib";
 import * as Plot from "npm:@observablehq/plot";
 import * as Inputs from "npm:@observablehq/inputs";
 import * as d3 from "npm:d3";
+import * as topojson from "npm:topojson-client";
 
 export const COLORS = {
   "Lichens": "#1b9e77",
@@ -242,6 +243,59 @@ export function completenessChart(rows, {width} = {}) {
       Plot.barX(data, {x: "pct", y: "field", fill: "#4a6fa5"}),
       Plot.text(data, {x: "pct", y: "field", text: (d) => d3.format(".0%")(d.pct), dx: 4, textAnchor: "start", fontSize: 11}),
       Plot.ruleX([0])
+    ]
+  });
+}
+
+// ---------- County map ----------
+const EARTH_RADIUS_MI = 3958.8;
+let countyShapesPromise;
+
+// New York county outlines (US Census via us-atlas), with names matched and areas in sq mi
+export function loadNYCounties() {
+  countyShapesPromise ??= fetch("https://cdn.jsdelivr.net/npm/us-atlas@3/counties-10m.json")
+    .then((r) => r.json())
+    .then((us) => {
+      const counties = topojson.feature(us, us.objects.counties).features
+        .filter((f) => String(f.id).startsWith("36"));
+      for (const f of counties) {
+        f.properties.county = normalizeCounty(f.properties.name) ?? f.properties.name;
+        f.properties.sqmi = d3.geoArea(f) * EARTH_RADIUS_MI ** 2;
+      }
+      const state = topojson.feature(us, us.objects.states).features.find((f) => f.id === "36");
+      return {counties, state};
+    });
+  return countyShapesPromise;
+}
+
+// Choropleth of New York counties: specimens per 100 sq mi, or total specimens
+export function choropleth(rows, shapes, {width, metric = "density", legend = true} = {}) {
+  const counts = d3.rollup(rows.filter((d) => d.nyCounty), (v) => v.length, (d) => d.nyCounty);
+  const n = (f) => counts.get(f.properties.county) ?? 0;
+  const density = (f) => (n(f) / f.properties.sqmi) * 100;
+  return Plot.plot({
+    width,
+    height: Math.round(width * 0.78),
+    projection: {type: "mercator", domain: shapes.state},
+    color: {
+      type: "sqrt",
+      scheme: "YlGn",
+      legend,
+      label: metric === "density" ? "Specimens per 100 sq mi" : "Specimens"
+    },
+    marks: [
+      Plot.geo(shapes.counties, Plot.centroid({
+        fill: metric === "density" ? density : n,
+        stroke: "white",
+        strokeWidth: 0.6,
+        channels: {
+          County: (f) => f.properties.county,
+          Specimens: n,
+          "Per 100 sq mi": density
+        },
+        tip: {format: {fill: false, Specimens: ",", "Per 100 sq mi": ".1f"}}
+      })),
+      Plot.geo(shapes.state, {stroke: "#444", strokeWidth: 0.8})
     ]
   });
 }

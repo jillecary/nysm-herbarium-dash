@@ -21,11 +21,13 @@ a.tile:hover .card { box-shadow: 0 6px 18px rgba(0,0,0,0.15); transform: transla
 ```js
 import {
   loadSpecimens, collectionsIn, COLORS,
-  countyChart, familyChart, timeChart, typeChart, completenessChart
+  countyChart, familyChart, timeChart, typeChart, completenessChart,
+  choropleth, loadNYCounties
 } from "./components/specimens.js";
 import {createSpecimenMap, toGeoJSON} from "./components/specimen-map.js";
 
 const specimens = await loadSpecimens();
+const nyShapes = await loadNYCounties();
 const mapped = specimens.filter((d) => d.hasCoords && d.coordStatus === "ok");
 const collectionNames = collectionsIn(specimens);
 const [firstYear, lastYear] = d3.extent(specimens, (d) => d.year);
@@ -72,8 +74,8 @@ display(html`<div style="display:flex; gap:1.2em; flex-wrap:wrap; margin-bottom:
   <a class="tile" href="./geography">
     <div class="card">
       <h2>Geography</h2>
-      <h3>Top 10 New York counties</h3>
-      ${resize((width) => countyChart(specimens, {width, top: 10, legend: false}))}
+            <h3>Specimens per 100 sq mi by county</h3>
+      ${resize((width) => choropleth(specimens, nyShapes, {width, legend: false}))}
       <div class="tile-footer">All 62 counties →</div>
     </div>
   </a>

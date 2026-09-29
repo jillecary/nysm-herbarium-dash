@@ -4,13 +4,13 @@ title: About
 
 # About this project
 
-This dashboard is an independent volunteer project that maps and summarizes the
+This dashboard is an independent project that maps and summarizes the
 publicly available herbarium records of the New York State Museum (NYSM). It is
 **not an official New York State Museum website**, and the museum has not reviewed
 or endorsed it.
 
 It was built by Jill Cary, a volunteer at NYSM, to explore the collection's
-history and geography and to show what a public collections dashboard could look like.
+history and geography and to demonstrate what a public collections visualization could look like.
 
 ## Data sources
 
