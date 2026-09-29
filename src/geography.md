@@ -1,11 +1,11 @@
 ---
-title: Specimens by county
+title: Geography
 toc: false
 ---
 
 [← Overview](./)
 
-# Specimens by county
+# Geography
 
 ```js
 import {loadSpecimens, collectionsIn, countyChart, inYears} from "./components/specimens.js";
@@ -16,8 +16,8 @@ const [minYear, maxYear] = d3.extent(specimens, (d) => d.year);
 
 ```js
 const collections = view(Inputs.checkbox(collectionNames, {label: "Collections", value: collectionNames}));
-const startYear = view(Inputs.range([minYear, maxYear], {label: "From year", step: 1, value: minYear}));
-const endYear = view(Inputs.range([minYear, maxYear], {label: "To year", step: 1, value: maxYear}));
+const startYear = view(Inputs.range([minYear, maxYear], {label: "From year", step: 1, value: minYear, format: String}));
+const endYear = view(Inputs.range([minYear, maxYear], {label: "To year", step: 1, value: maxYear, format: String}));
 const includeUndated = view(Inputs.toggle({label: "Include undated", value: true}));
 const countySort = view(Inputs.radio(["Most specimens", "Alphabetical"], {label: "Sort", value: "Most specimens"}));
 ```

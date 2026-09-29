@@ -1,5 +1,6 @@
 import {FileAttachment} from "observablehq:stdlib";
 import * as Plot from "npm:@observablehq/plot";
+import * as Inputs from "npm:@observablehq/inputs";
 import * as d3 from "npm:d3";
 
 export const COLORS = {
@@ -27,6 +28,20 @@ export function normalizeCounty(c) {
   return NY_COUNTIES.find((n) => n.toLowerCase() === s) ?? null;
 }
 
+// Type status: "Isotype of Agaricus X" -> "Isotype"
+const TYPE_TERMS = [
+  "holotype", "isotype", "lectotype", "isolectotype", "neotype", "isoneotype",
+  "epitype", "isoepitype", "syntype", "isosyntype", "paratype", "paralectotype",
+  "topotype", "type"
+];
+export function typeCategory(s) {
+  if (!s) return null;
+  const t = s.toLowerCase();
+  if (/\bnot\b|\bnon\b/.test(t)) return null;
+  const hit = TYPE_TERMS.find((term) => new RegExp(`\\b${term}\\b`).test(t));
+  return hit ? hit[0].toUpperCase() + hit.slice(1) : "Other type";
+}
+
 // Load every specimen as a plain object
 export async function loadSpecimens() {
   const table = await FileAttachment("../data/specimens.parquet").parquet();
@@ -37,6 +52,7 @@ export async function loadSpecimens() {
     d.lon = d.decimalLongitude;
     d.hasCoords = Number.isFinite(d.lat) && Number.isFinite(d.lon);
     d.nyCounty = d.stateProvince === "New York" ? normalizeCounty(d.county) : null;
+    d.typeCat = typeCategory(d.typeStatus);
     return d;
   });
 }
@@ -52,6 +68,28 @@ export function inYears(d, startYear, endYear, includeUndated) {
 export const yearFormat = (y) => (y == null ? "" : String(y));
 
 const colorScale = (legend) => ({domain: Object.keys(COLORS), range: Object.values(COLORS), legend});
+
+// ---------- Tabs: a radio input styled as tab buttons ----------
+let tabStyleAdded = false;
+export function tabs(options, {value} = {}) {
+  if (!tabStyleAdded) {
+    document.head.append(Object.assign(document.createElement("style"), {textContent: `
+      .tabs { margin: 0.5rem 0 1rem; }
+      .tabs label:has(input) {
+        padding: 0.35rem 0.9rem; margin: 0 0.4rem 0.4rem 0; border-radius: 999px;
+        border: 1px solid var(--theme-foreground-faint); cursor: pointer;
+      }
+      .tabs label:has(input:checked) { background: var(--theme-foreground); color: var(--theme-background); }
+      .tabs input[type=radio] { position: absolute; opacity: 0; width: 1px; }
+    `}));
+    tabStyleAdded = true;
+  }
+  const input = Inputs.radio(options, {value: value ?? options[0]});
+  input.classList.add("tabs");
+  return input;
+}
+
+// ---------- Charts ----------
 
 // Stacked bar chart of New York counties, colored by collection
 export function countyChart(rows, {width, top, sort = "count", legend = true} = {}) {
@@ -94,6 +132,115 @@ export function familyChart(rows, {width, collection = null, top = 25, legend = 
     color: colorScale(legend && !collection),
     marks: [
       Plot.barX(data, {x: "n", y: "family", fill: "collection", tip: true}),
+      Plot.ruleX([0])
+    ]
+  });
+}
+
+// Specimens collected per year or decade, stacked by collection
+export function timeChart(rows, {width, interval = 10, height = 360, legend = true} = {}) {
+  return Plot.plot({
+    width,
+    height,
+    x: {label: "Year collected", tickFormat: "d"},
+    y: {label: "Specimens", grid: true},
+    color: colorScale(legend),
+    marks: [
+      Plot.rectY(rows.filter((d) => d.year != null),
+        Plot.binX({y: "count"}, {x: "year", fill: "collection", interval, tip: {format: {x1: "d", x2: "d"}}})),
+      Plot.ruleY([0])
+    ]
+  });
+}
+
+// Running total of specimens collected, one line per collection
+export function cumulativeChart(rows, {width, height = 280} = {}) {
+  return Plot.plot({
+    width,
+    height,
+    x: {label: "Year collected", tickFormat: "d"},
+    y: {label: "Total specimens collected", grid: true},
+    color: colorScale(false),
+    marks: [
+      Plot.lineY(rows.filter((d) => d.year != null),
+        Plot.mapY("cumsum", Plot.binX({y: "count", x: "x1"}, {x: "year", stroke: "collection", interval: 1, tip: {format: {x: "d"}}}))),
+      Plot.ruleY([0])
+    ]
+  });
+}
+
+// Top collectors: grey line = active span, ticks = specimens by year
+export function collectorChart(rows, {width, top = 20} = {}) {
+  const dated = rows.filter((d) => d.primaryCollector && d.year != null);
+  const stats = d3.rollups(dated, (v) => ({
+      n: v.length,
+      first: d3.min(v, (d) => d.year),
+      last: d3.max(v, (d) => d.year)
+    }), (d) => d.primaryCollector)
+    .map(([name, s]) => ({name, ...s}))
+    .sort((a, b) => b.n - a.n)
+    .slice(0, top)
+    .sort((a, b) => a.first - b.first);
+  const names = new Set(stats.map((d) => d.name));
+  return Plot.plot({
+    width,
+    height: stats.length * 22 + 60,
+    marginLeft: 170,
+    marginRight: 60,
+    x: {label: "Year collected", tickFormat: "d", grid: true},
+    y: {label: null, domain: stats.map((d) => d.name)},
+    color: colorScale(true),
+    marks: [
+      Plot.ruleY(stats, {y: "name", x1: "first", x2: "last", stroke: "#bbb", strokeWidth: 2}),
+      Plot.tickX(dated.filter((d) => names.has(d.primaryCollector)),
+        {x: "year", y: "primaryCollector", stroke: "collection", strokeOpacity: 0.35}),
+      Plot.text(stats, {x: "last", y: "name", text: (d) => d.n.toLocaleString(), dx: 6, textAnchor: "start", fontSize: 10}),
+      Plot.tip(stats, Plot.pointerY({y: "name", x: "first",
+        title: (d) => `${d.name}\n${d.n.toLocaleString()} specimens\n${d.first}–${d.last}`}))
+    ]
+  });
+}
+
+// Type specimens by category, stacked by collection
+export function typeChart(rows, {width, legend = true} = {}) {
+  const types = rows.filter((d) => d.typeCat);
+  const categories = new Set(types.map((d) => d.typeCat)).size;
+  return Plot.plot({
+    width,
+    height: categories * 22 + 50,
+    marginLeft: 100,
+    x: {label: "Specimens", grid: true},
+    y: {label: null},
+    color: colorScale(legend),
+    marks: [
+      Plot.barX(types, Plot.groupY({x: "count"}, {y: "typeCat", fill: "collection", sort: {y: "-x"}, tip: true})),
+      Plot.ruleX([0])
+    ]
+  });
+}
+
+// How many records have each important field filled in
+export const COMPLETENESS_FIELDS = [
+  ["Collection year", (d) => d.year != null],
+  ["Collector", (d) => !!d.recordedBy],
+  ["Family", (d) => !!d.family],
+  ["Identified to species", (d) => !!d.species],
+  ["County", (d) => !!d.county],
+  ["Locality description", (d) => !!d.locality],
+  ["Usable coordinates", (d) => d.coordStatus === "ok"]
+];
+export function completenessChart(rows, {width} = {}) {
+  const data = COMPLETENESS_FIELDS.map(([field, test]) => ({field, pct: d3.mean(rows, (d) => (test(d) ? 1 : 0))}));
+  return Plot.plot({
+    width,
+    height: data.length * 24 + 40,
+    marginLeft: 150,
+    marginRight: 40,
+    x: {domain: [0, 1], tickFormat: "%", label: "Share of records", grid: true},
+    y: {label: null, domain: data.map((d) => d.field)},
+    marks: [
+      Plot.barX(data, {x: "pct", y: "field", fill: "#4a6fa5"}),
+      Plot.text(data, {x: "pct", y: "field", text: (d) => d3.format(".0%")(d.pct), dx: 4, textAnchor: "start", fontSize: 11}),
       Plot.ruleX([0])
     ]
   });

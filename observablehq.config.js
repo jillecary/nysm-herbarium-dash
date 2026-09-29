@@ -16,12 +16,21 @@ export default {
   //   }
   // ],
 pages: [
-  {name: "Specimen map", path: "/map"},
-  {name: "Specimens by county", path: "/counties"},
-  {name: "Families", path: "/families"},
-  {name: "Collection summary", path: "/summary"},
-  {name: "About", path: "/about"}
+  {name: "Explore", open: true, pages: [
+    {name: "Specimen map", path: "/map"}
+  ]},
+  {name: "The collection", open: true, pages: [
+    {name: "History", path: "/history"},
+    {name: "Geography", path: "/geography"},
+    {name: "Taxonomy", path: "/taxonomy"},
+    {name: "Type specimens", path: "/types"}
+  ]},
+  {name: "Data", open: true, pages: [
+    {name: "Data & digitization", path: "/data"},
+    {name: "About", path: "/about"}
+  ]}
 ],
+
   // Content to add to the head of the page, e.g. for a favicon:
   head: '<link rel="icon" href="observable.png" type="image/png" sizes="32x32">',
 

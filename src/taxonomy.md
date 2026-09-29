@@ -1,11 +1,11 @@
 ---
-title: Families
+title: Taxonomy
 toc: false
 ---
 
 [← Overview](./)
 
-# Families by collection
+# Taxonomy
 
 ```js
 import {loadSpecimens, collectionsIn, familyChart, inYears} from "./components/specimens.js";
@@ -17,8 +17,8 @@ const [minYear, maxYear] = d3.extent(specimens, (d) => d.year);
 ```js
 const tab = view(Inputs.radio(["All collections", ...collectionNames], {value: "All collections"}));
 const topN = view(Inputs.select([15, 25, 50, "All"], {label: "Show top", value: 25}));
-const startYear = view(Inputs.range([minYear, maxYear], {label: "From year", step: 1, value: minYear}));
-const endYear = view(Inputs.range([minYear, maxYear], {label: "To year", step: 1, value: maxYear}));
+const startYear = view(Inputs.range([minYear, maxYear], {label: "From year", step: 1, value: minYear, format: String}));
+const endYear = view(Inputs.range([minYear, maxYear], {label: "To year", step: 1, value: maxYear, format: String}));
 const includeUndated = view(Inputs.toggle({label: "Include undated", value: true}));
 ```
 

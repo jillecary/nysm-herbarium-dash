@@ -1,11 +1,11 @@
 ---
-title: Collection summary
+title: Data and Digitization
 toc: false
 ---
 
 [← Overview](./)
 
-# Collection summary
+# Data and Digitization
 
 ```js
 import {loadSpecimens, collectionsIn, yearFormat} from "./components/specimens.js";

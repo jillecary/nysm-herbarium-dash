@@ -21,8 +21,8 @@ const [minYear, maxYear] = d3.extent(rows, (d) => d.year);
 
 ```js
 const collections = view(Inputs.checkbox(collectionNames, {label: "Collections", value: collectionNames}));
-const startYear = view(Inputs.range([minYear, maxYear], {label: "From year", step: 1, value: minYear}));
-const endYear = view(Inputs.range([minYear, maxYear], {label: "To year", step: 1, value: maxYear}));
+const startYear = view(Inputs.range([minYear, maxYear], {label: "From year", step: 1, value: minYear, format: String}));
+const endYear = view(Inputs.range([minYear, maxYear], {label: "To year", step: 1, value: maxYear, format: String}));
 const options = view(Inputs.checkbox(
   ["Include undated specimens", "Include suspect coordinates"],
   {label: "Options", value: ["Include undated specimens"]}
