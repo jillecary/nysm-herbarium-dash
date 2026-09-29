@@ -16,7 +16,7 @@ DATASETS = {
 CACHE = ROOT / ".gbif-cache"
 GBIF_ZIP = CACHE / "nysm-herbarium.zip"
 CNH_ZIP = ROOT / "data-sources" / "cnh-nys-vascular.zip"
-MAX_AGE_DAYS = 30
+MAX_AGE_DAYS = 25
 
 COLUMNS = [
     "catalogNumber", "scientificName", "family", "genus", "species",
